@@ -3,9 +3,9 @@
 import sys
 from socket import *
 serverHost = "localhost"         # servername is localhost
-serverPort = 1337            # use arbitrary port > 1024
+serverPort = 4242            # use arbitrary port > 1024
 
-s = socket(AF_INET, SOCK_STREAM)    # create a TCP socket
+s = socket(AF_INET6, SOCK_STREAM)    # create a TCP socket
 
 
 s.connect((serverHost, serverPort)) # connect to server on the port
