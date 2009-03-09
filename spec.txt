@@ -1,0 +1,268 @@
+
+
+
+
+
+
+                                                            O. Johansson
+                                                              S. Norberg
+                                                                     BTH
+                                                               Mars 2009
+
+                      Tic Tac Toe Protocol -- TTTP/1.0
+
+Status of this Memo
+   
+   This document specifies an Internet standards track protocol for the
+   Internet community, and requests discussion and suggestions for
+   improvements.  Please refer to the current edition of the "Internet
+   Official Protocol Standards" (STD 1) for the standardization state
+   and status of this protocol.  Distribution of this memo is unlimited. 
+
+Abstract
+
+   The Tic Tac Toe Protocol simplifies and standardize the process of 
+   playing a friendly game of Tic Tac Toe over IP.
+
+
+
+                                                                [Page 1]
+
+Table of Contents
+
+   1   Introduction ................................................ 02
+   1.1   Purpose ................................................... 02
+   1.2   Requirements .............................................. 02
+   1.3   Terminology ............................................... 02
+   1.4   Overall Operation ......................................... 03
+   2   Notational Conventions and Generic Grammar .................. 03
+   2.1   Augmented BNF ............................................. 03
+   3   TTTP Messages ............................................... 03
+   3.1   General ................................................... 03
+   3.1.1   Basic Rules ............................................. 03
+   3.2   Initialization ............................................ 03
+   3.3   During Game ............................................... 04
+   3.4   End of Game ............................................... 04
+   4   References .................................................. 05
+
+1 Introduction
+
+1.1 Purpose
+
+   Tictactoe Protocol (TTTP) is a connection oriented protcol loosly 
+   modelled after the HTTP[1]. It's purpose it to make playing a game
+   of Tic Tac Toe between two hosts possible.
+
+1.2 Requirements
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [2].
+
+   An implementation is not compliant if it fails to satisfy one or more
+   of the MUST or REQUIRED level requirements for the protocols it
+   implements. An implementation that satisfies all the MUST or REQUIRED
+   level and all the SHOULD level requirements for its protocols is said
+   to be "unconditionally compliant"; one that satisfies all the MUST
+   level requirements but not all the SHOULD level requirements for its
+   protocols is said to be "conditionally compliant."
+
+1.3 Terminology
+
+   peer
+      a participant in the game.
+
+   server
+      the peer that starts by listening to a predefined port number.
+
+   client
+      the peer that starts by connecting to a server.
+
+   initiaztion message
+      the HTTP request like message after the initiaztion of the 
+      connection.
+
+   game message
+      messages during game 
+
+                                                                [Page 2]
+
+
+   user-agent
+      the players application
+
+   marker
+      in the traditional game, often represented by a X and O.
+
+1.4 Overall Operation
+
+   The client connects to a server over TCP, and starts sending a header
+   as defined in this document (3.1). When this is sent, the server 
+   replies by a similiar, but with the addition of a "init" field, 
+   informing the client of who is beginning.
+
+   The game commences by the starting peer sending the other peer the
+   coordinates of the position it wants to put a marker on. The other 
+   peer replies with the coordinates of the position it wants to put a
+   marker on. When there is a total of six (6) markers on the board the
+   peers MUST only accept movement of the markers.
+
+   When the server concludes that a peer has won, the server announces
+   this and the connection is terminated. The server MUST only declare
+   a peer a winner if it has three markers in row.
+
+   It is RECOMMENDED that all implementations support RFC2460 [3].
+
+2 Notational Convenctions and Generic Grammar
+
+2.1 Augmented BNF
+
+   All of the mechanisms specified in this document are descibed in 
+   both prose and an augmented Backus-Naur Form (BNF) similiar to that
+   used by RFC 2616 [1]. The syntax of this document follows that fof
+   RFC 2616 (see RFC 2616, section 2.1).
+
+3 TTTP Messages
+
+3.1 General
+
+   All messages MUST be encoding in UTF-8.
+
+   3.2 Basic Rules
+
+      OCTET = %x01-FF 
+      DIGIT = %x30-39
+
+3.2 Initialization
+   
+   After the TCP connection is set up, the client sends a
+   init-client-message. After the server has recieved this, it sends a
+   init-server-message, with the begin-field set to 0 if the server peer
+   will start, and 1 if the client peer will start. It is RECOMMENDED
+   that this value will be generated through ranomization.
+
+   All of the possible headers MUST be included (i.e name, user-agent 
+   and version).
+
+                                                                [Page 3]
+
+
+      init-client-message = 3<field> CRLF
+      init-server-message = 3<field> <begin-field> CRLF
+      begin-field = "init:" "1"|"0" CRLF
+      field = (("name:" <name>)
+            |  ("user-agent:" <user-agent>)
+	    |  ("version:1.0")) CRLF
+    
+      user-agent = <application-name> "/" <application-version> SP 
+                   ["("<system-information>")"]
+      name = *32<OCTET>
+      application-name = *32<OCTET>
+      application-version = <DIGIT> [ "." <DIGIT> ]
+      system-information = *256<OCTET>
+
+   Thus, the maximum message size of the init header is 365 (including 
+   the init field), 
+
+3.3 During Game
+   
+   As long as the game has less than six markers on the board, the peer
+   selects new positions with the ingame-message field "set". 
+   
+   When each player has set three positions, they have to move them.
+   They move one marker each turn, by sending a "mov" field, with a 
+   mov-field-value.
+
+      ingame-message = (("set:" <set-field-value>)
+                     |  ("err:" <err-field-value>)
+		     |  ("mov:" <mov-field-value>)) CRLF
+      mov-field-value = <pos> "→" <pos>
+      set-field-value = <pos>
+      pos = "1"|"2"|"3" "," "1"|"2"|"3"
+
+   3.3.1 Errors
+
+      After each "set" or "mov" message from player A, player B responds 
+      with a err message.
+
+         err-field-value = "0"             ; success
+	                 | "1"             ; not your turn
+			 | "2"             ; pos not on board
+			 | "3"             ; not your marker ("mov")
+			 | "4"             ; position busy
+			 | "5"             ; does not follow protocol
+			 | "6"             ; no more markers
+
+3.4 End of game
+
+   When the server has concluded that there is a winner, the server will
+   announce this with a "win"-message and terminate the connection.
+
+      win = "win:" "0"|"1" CRLF            ; 0 if the server has won, 
+                                           ; and 1 if the client won
+
+
+
+
+                                                                [Page 4]
+
+4 References
+
+   1: http://ietf.org/rfc/rfc2616.txt
+   2: http://ietf.org/rfc/rfc2119.txt
+   3: http://ietf.org/rfc/rfc2460.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                               [Page 5]
+
