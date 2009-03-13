@@ -11,8 +11,7 @@ class Server:
 		PORT = 4242 # Arbitrary non-privileged port
 		self.clientHeader = {}
 		self.serverHeader = {'version': '1.0', 'name': name,
-		                     'user-agent': '3TP/0.1 Linux 2.6',
-		                     'init' : '0'}
+		                     'user-agent': '3TP/0.1 Linux 2.6'}
 		self.bord = [[0,0,0],
 		             [0,0,0],
 		             [0,0,0]]
@@ -59,31 +58,39 @@ class Server:
 	 		self.clientHeader[field] = value
 
 	def sendHeaders(self):
-		#randomize player to start
-		self.turn =  random.randint(0,1)
-		self.serverHeader["init"] = str(self.turn)
 		data = ""
 		for part in self.serverHeader.items():
 			data += part[0] + ":" + part[1] + CRLF
+		#randomize player to start
+		self.turn =  random.randint(0,1)
+		data += "init:" + str(self.turn) + CRLF
 		self.conn.send(data)
 
 	def setPlay(self):
 		for i in range(6):
 			if self.turn == 0: #servers tur
-				
+				self.printBord()
+				pos = raw_input("set >")
+				x = pos.partition(",")[0]	
+				y = pos.partition(",")[2]
+				print "err:", self.set(x, y)
+				self.turn = 1	
+							
 			else: #clients tur
 				self.waitOnOponent()
 				self.turn = 0
 
 	def set(self, x, y):
-		self.conn.send("set:" + str(x) + "," + str(y))
+		x = int(x)
+		y = int(y)
+		self.conn.send("set:" + str(x) + "," + str(y) + CRLF)
 		data = self.conn.recv(8)
 		data.strip(CRLF)
 		field = data.partition(":")[0]
 		value = data.partition(":")[2]
 		if field == "err":
 			if int(value) == 0:
-				self.bord[x-1, y-1] = 1 
+				self.bord[x-1][y-1] = 1 
 			return int(value)
 		else:
 			print "Server expected 'err' but got:", data
@@ -104,7 +111,7 @@ class Server:
 				elif self.bord[x][y] == 0: #success
 					self.sendError(0)
 					self.bord[x][y] = 2
-					if self.markerInGame() == 6:
+					if self.markersInGame() == 6:
 						self.gamestate = "Mov"
 					return
 				else: #position busy
@@ -126,7 +133,7 @@ class Server:
 		return nr
 	
 	def sendError(self, error):
-		self.conn.send("err:" + str(err) + CRLF)
+		self.conn.send("err:" + str(error) + CRLF)
 
 	def printBord(self):
 		for i in range(9):
@@ -135,6 +142,6 @@ class Server:
 			elif (self.bord[i/3][i%3] == 2):
 				print "O",
 			else:
-				print " ",
+				print "_",
 			if (i % 3 == 0):
 				print
