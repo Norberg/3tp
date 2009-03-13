@@ -7,9 +7,8 @@ CRLF = "\r\n"
 class Server:
 
 	def __init__(self, name):
-		print "init"
-		HOST = '' # Symbolic name meaning all available interfaces
-		PORT = 4242 # Arbitrary non-privileged port
+		HOST = '' #all available interfaces
+		PORT = 4242
 		self.clientHeader = {}
 		self.serverHeader = {'version': '1.0', 'name': name,
 		                     'user-agent': '3TP/0.1 Linux 2.6'}
@@ -72,10 +71,14 @@ class Server:
 			if self.turn == 0: #servers tur
 				self.printBord()
 				self.printWinner()
-				pos = raw_input("set >")
-				x = pos.partition(",")[0]	
-				y = pos.partition(",")[2]
-				print "err:", self.set(x, y)
+				err = 1
+				while err != 0:
+					pos = raw_input("set >")
+					x = pos.partition(",")[0]	
+					y = pos.partition(",")[2]
+					err = self.set(x, y)
+					if err != 0:
+						print "Invalid action"	
 				self.printBord()
 				self.printWinner()
 				print "Waiting..."
@@ -86,13 +89,18 @@ class Server:
 				self.turn = 0
 
 	def set(self, x, y):
-		x = int(x)
-		y = int(y)
+		try:
+			x = int(x)
+			y = int(y)
+		except:
+			return 5
 		self.conn.send("set:" + str(x) + "," + str(y) + CRLF)
-		data = self.conn.recv(8)
+		data = self.conn.recv(256)
 		data.strip(CRLF)
 		field = data.partition(":")[0]
 		value = data.partition(":")[2]
+		if not value: #if value part missing
+		 	return 5
 		if field == "err":
 			if int(value) == 0:
 				self.bord[x-1][y-1] = 1 
@@ -105,13 +113,17 @@ class Server:
 			if self.turn == 0: #servers tur
 				self.printBord()
 				self.printWinner()
-				pos = raw_input("from >")
-				fromX = pos.partition(",")[0]	
-				fromY = pos.partition(",")[2]
-				pos = raw_input("to >")
-				toX = pos.partition(",")[0]	
-				toY = pos.partition(",")[2]
-				print "err:", self.mov(fromX, fromY, toX, toY)
+				err = 1
+				while err != 0:
+					pos = raw_input("from >")
+					fromX = pos.partition(",")[0]	
+					fromY = pos.partition(",")[2]
+					pos = raw_input("to >")
+					toX = pos.partition(",")[0]	
+					toY = pos.partition(",")[2]
+					err = self.mov(fromX, fromY, toX, toY)
+					if err != 0:
+						print "Invalid action"	
 				self.printBord()
 				self.printWinner()
 				print "Waiting..."
@@ -141,7 +153,7 @@ class Server:
 			print "Server expected 'err' but got:", data
 
 	def waitOnOponent(self):
-		data = self.conn.recv(16)
+		data = self.conn.recv(256)
 		if self.gamestate == "Set":
 			try:
 				data.strip(CRLF)
@@ -160,8 +172,6 @@ class Server:
 				elif self.bord[x][y] == 0: #success
 					self.sendError(0)
 					self.bord[x][y] = 2
-					if self.markersInGame() == 6:
-						self.gamestate = "Mov"
 					return
 				else: #position busy
 					self.sendError(4)
@@ -259,14 +269,6 @@ class Server:
 		#no player have won yet
 		return 0
 
-	def markersInGame(self):
-		nr = 0
-		for x in self.bord:
-			for y in x:
-				if y != 0:
-					nr += 1
-		return nr
-	
 	def sendError(self, error):
 		self.conn.send("err:" + str(error) + CRLF)
 
