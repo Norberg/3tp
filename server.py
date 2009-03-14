@@ -9,8 +9,8 @@ class Server:
 	def __init__(self, name):
 		HOST = '' #all available interfaces
 		PORT = 4242
-		self.clientHeader = {}
-		self.serverHeader = {'version': '1.0', 'name': name,
+		self.oponentHeader = {}
+		self.myHeader = {'version': '1.0', 'name': name,
 		                     'user-agent': '3TP/0.1 Linux 2.6'}
 		self.bord = [[0,0,0],
 		             [0,0,0],
@@ -34,7 +34,7 @@ class Server:
 		self.gamestate = "Mov"
 		self.movPlay()
 
-		print self.clientHeader
+		print self.oponentHeader
 		print "Quiting.."
 		self.conn.close()
 
@@ -45,21 +45,21 @@ class Server:
 			for part in msg:
 				self.parseHeader(part)
 			#all headers recived
-			if len(self.clientHeader) >= 3:
+			if len(self.oponentHeader) >= 3:
 				break;
 		
 	def parseHeader(self, data):
 		#parse header	
-		if len(self.clientHeader) < 3 and data != "":
+		if len(self.oponentHeader) < 3 and data != "":
 			field = data.partition(":")[0]
 			value = data.partition(":")[2]
 			if field == "name" or field == "version" or \
 			   field == "user-agent": 
-	 			self.clientHeader[field] = value
+	 			self.oponentHeader[field] = value
 
 	def sendHeaders(self):
 		data = ""
-		for part in self.serverHeader.items():
+		for part in self.myHeader.items():
 			data += part[0] + ":" + part[1] + CRLF
 		#randomize player to start
 		self.turn =  random.randint(0,1)
@@ -76,12 +76,13 @@ class Server:
 					pos = raw_input("set >")
 					x = pos.partition(",")[0]	
 					y = pos.partition(",")[2]
+					print "Validateing move..."
 					err = self.set(x, y)
 					if err != 0:
 						print "Invalid action"	
 				self.printBord()
 				self.printWinner()
-				print "Waiting..."
+				print "Waiting on", self.oponentHeader["name"]
 				self.turn = 1	
 							
 			else: #clients tur
@@ -121,12 +122,13 @@ class Server:
 					pos = raw_input("to >")
 					toX = pos.partition(",")[0]	
 					toY = pos.partition(",")[2]
+					print "Validateing move..."
 					err = self.mov(fromX, fromY, toX, toY)
 					if err != 0:
 						print "Invalid action"	
 				self.printBord()
 				self.printWinner()
-				print "Waiting..."
+				print "Waiting on", self.oponentHeader["name"]
 				self.turn = 1	
 							
 			else: #clients tur
@@ -235,7 +237,7 @@ class Server:
 			self.conn.close()
 			quit()
 		elif winner == 2:
-			print "You lost the game"
+			print self.oponentHeader["name"], "won the game"
 			self.conn.send("win:1" + CRLF)
 			self.conn.close()
 			quit()
