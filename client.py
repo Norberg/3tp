@@ -7,12 +7,11 @@ CRLF = "\r\n"
 
 class Client(Server):
 
-	def __init__(self, name):
-		HOST = "localhost"
+	def __init__(self, name, HOST):
 		PORT = 4242
 		self.oponentHeader = {}
 		self.myHeader = {'version': '1.0', 'name': name,
-		                     'user-agent': '3TP/0.1 Linux 2.6'}
+		                     'user-agent': '3TP/0.1 (Linux 2.6)'}
 		self.bord = [[0,0,0],
 		             [0,0,0],
 		             [0,0,0]]
@@ -66,11 +65,19 @@ class Client(Server):
 		for part in self.myHeader.items():
 			data += part[0] + ":" + part[1] + CRLF
 		self.conn.send(data)
+	
+	def printWinner(self):
+		winner = self.getWinner()
+		if winner == 1:
+			print "You won the game"
+			self.conn.close()
+			quit()
+		elif winner == 2:
+			print self.oponentHeader["name"], "won the game"
+			self.conn.close()
+			quit()
 
 			
-	def printWinner(self):
-		pass #disabled in clientversion
-
 	def getMarker(self, val):
 		if val == 0:
 			return " "
