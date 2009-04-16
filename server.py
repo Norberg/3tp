@@ -96,7 +96,7 @@ class Server:
 		except:
 			return 5
 		self.conn.send("set:" + str(x) + "," + str(y) + CRLF)
-		data = self.conn.recv(256)
+		data = self.conn.recv(7)
 		data.strip(CRLF)
 		field = data.partition(":")[0]
 		value = data.partition(":")[2]
@@ -106,6 +106,10 @@ class Server:
 			if int(value) == 0:
 				self.bord[x-1][y-1] = 1 
 			return int(value)
+		elif field == "win":
+			self.bord[x-1][y-1] = 1 
+			return int(0) #win implicit correct move	
+			
 		else:
 			print "Server expected 'err' but got:", data
 	
@@ -151,6 +155,9 @@ class Server:
 				self.bord[toX-1][toY-1] = 1
 	       			self.bord[fromX-1][fromY-1] = 0
 			return int(value)
+		elif field == "win":
+			self.bord[x-1][y-1] = 1 
+			return int(0) #win implicit correct move	
 		else:
 			print "Server expected 'err' but got:", data
 

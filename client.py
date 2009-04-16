@@ -17,9 +17,15 @@ class Client(Server):
 		             [0,0,0]]
 		self.gameState = "Setup"
 		self.turn = 0
-		self.conn = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-		self.conn.connect((HOST, PORT))
-	
+		try:
+			#ipv6
+			self.conn = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+			self.conn.connect((HOST, PORT))
+		except:
+			#ipv4
+			self.conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.conn.connect((HOST, PORT))
+
 		#Send headers to server
 		self.sendHeaders()
 		#Recive headers from server
