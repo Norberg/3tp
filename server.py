@@ -156,7 +156,8 @@ class Server:
 	       			self.bord[fromX-1][fromY-1] = 0
 			return int(value)
 		elif field == "win":
-			self.bord[x-1][y-1] = 1 
+			self.bord[toX-1][toY-1] = 1
+	       		self.bord[fromX-1][fromY-1] = 0
 			return int(0) #win implicit correct move	
 		else:
 			print "Server expected 'err' but got:", data
@@ -173,6 +174,7 @@ class Server:
 			except:
 				self.waitOnOponent()
 				self.sendError(5)
+				return
 			if field == "set":
 				if x >= 3 or y >= 3: #pos not on border
 					self.sendError(2)
